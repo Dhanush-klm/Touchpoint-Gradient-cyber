@@ -6,11 +6,11 @@ from typing import Dict, List, Tuple
 from datetime import datetime
 
 # Database connection strings
-BIO_DB_CONN = st.secrets["database"]["bio_db_connection"]
-TP_DB_CONN = st.secrets["database"]["tp_db_connection"]
+BIO_DB_CONN = st.secrets["bio_db_connection"]
+TP_DB_CONN = st.secrets["tp_db_connection"]
 
 # Initialize OpenAI client
-client = OpenAI(api_key=st.secrets["openai"]["api_key"])
+client = OpenAI(api_key=st.secrets["api_key"])
 
 class QueryAnalyzer:
     def analyze_query(self, query: str) -> Dict:
