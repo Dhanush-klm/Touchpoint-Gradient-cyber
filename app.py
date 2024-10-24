@@ -348,30 +348,21 @@ Action Items:
 
     return formatted_text
 
-def get_llm_response(query: str, data: str) -> str:
-    """Get response from OpenAI based on the query and formatted data"""
+def get_llm_response(query: str, data: str, system_instruction: str) -> str:
     try:
         prompt = f"""
-You are a professional business analyst with access to company data and meeting history. Please analyze the following query and provide insights based on the available data:
+{system_instruction}
 
 Query: {query}
 
 Available Data:
 {data}
-
-Please provide a detailed yet concise response that:
-1. Directly answers the query using specific data points
-2. Identifies any relevant trends or patterns
-3. Highlights important observations about the company's status
-4. Notes any potential areas of attention if relevant
-5. Mentions if any critical information is missing to fully answer the query
-
-Format your response professionally and support your analysis with specific data points from the provided information.
 """
 
         response = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
+            messages=[{"role": "system", "content": system_instruction},
+                      {"role": "user", "content": prompt}],
             temperature=0.1,
             max_tokens=1500
         )
@@ -379,9 +370,36 @@ Format your response professionally and support your analysis with specific data
         return response.choices[0].message.content
     except Exception as e:
         return f"Error getting AI response: {str(e)}"
+
+def get_system_instruction():
+    if 'system_instruction' not in st.session_state:
+        st.session_state.system_instruction = """You are a professional business analyst with access to company data and meeting history. Please analyze the following query and provide insights based on the available data:
+
+1. Answer for the query using specific data points
+2. Identify any relevant trends or patterns
+3. Highlight important observations about the company's status
+4. Note any potential areas of attention if relevant
+5. Mention if any critical information is missing to fully answer the query
+
+Format your response professionally and support your analysis with specific data points from the provided information."""
+    
+    return st.session_state.system_instruction
+
 def main():
     st.set_page_config(page_title="Gradient Intelligence", layout="wide")
     
+    # Sidebar for system instruction
+    with st.sidebar:
+        st.title("System Settings")
+        system_instruction = st.text_area(
+            "Edit System Instruction",
+            value=get_system_instruction(),
+            height=300
+        )
+        if st.button("Update System Instruction"):
+            st.session_state.system_instruction = system_instruction
+            st.success("System instruction updated successfully!")
+
     st.title("🔍 Touchpoint Data Insights")
     st.markdown("""
     Ask questions about company details, technical setup, or meeting history.
@@ -443,7 +461,7 @@ def main():
             if company_data:
                 # Format data and get LLM response
                 formatted_data = format_data_for_llm(company_data, touchpoint_data)
-                response = get_llm_response(query, formatted_data)
+                response = get_llm_response(query, formatted_data, get_system_instruction())
 
                 # Create tabs for different views
                 tab1, tab2, tab3 = st.tabs(["Analysis", "Company Details", "Meeting History"])
@@ -533,3 +551,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
